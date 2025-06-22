@@ -77,7 +77,9 @@ jobs:
       - name: Build local-gpss.csproj
         run: |
           msbuild ${{ github.workspace }}/local-gpss.csproj /p:Configuration=Release /p:Platform="Any CPU"
-        continue-on-error: true
+        # Not a good idea...
+        #continue-on-error: true
+        continue-on-error: false
         id: local-gpss-build
         
       # If the build was successful, we're good to commit the new DLLs.
