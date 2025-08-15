@@ -5,6 +5,34 @@ A local hostable version of the services that [PKSM](https://github.com/FlagBrew
 ## How to Use
 See the [Setup Guide](https://github.com/FlagBrew/local-gpss/wiki/Server-Setup-Guide)
 
+## Docker Usage
+
+### Quick Start
+```bash
+# Build the image
+docker build -t local-gpss .
+
+# Run with temporary storage (data lost when container is removed)
+docker run -p 8080:8080 local-gpss
+```
+
+### Persistent Storage
+⚠️ **By default, data is lost when the container is removed.** To keep your Pokémon database and configuration:
+
+```bash
+# Create data directory with proper permissions
+mkdir -p ~/local-gpss-data
+chmod 777 ~/local-gpss-data
+
+# Run with persistent storage
+docker run -p 8080:8080 \
+  -e GPSS_DATA_DIR=/data \
+  -v ~/local-gpss-data:/data \
+  local-gpss
+```
+
+The application will prompt for initial setup on first run.
+
 ## Updating Auto Legality
 This is a pain to do, and is one of the reasons why Auto Legality never really stayed up to date.
 

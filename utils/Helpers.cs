@@ -15,6 +15,16 @@ public static class Helpers
 {
     public static Random rand;
 
+    public static string GetDataDirectory()
+    {
+        var dataDir = Environment.GetEnvironmentVariable("GPSS_DATA_DIR") ?? Directory.GetCurrentDirectory();
+        if (!Directory.Exists(dataDir))
+        {
+            Directory.CreateDirectory(dataDir);
+        }
+        return dataDir;
+    }
+
     public static Config? Init()
     {
         EncounterEvent.RefreshMGDB(string.Empty);
@@ -25,7 +35,8 @@ public static class Helpers
         // Load config 
         try
         {
-            string config = File.ReadAllText("./local-gpss.json");
+            string configPath = Path.Combine(GetDataDirectory(), "local-gpss.json");
+            string config = File.ReadAllText(configPath);
             return JsonSerializer.Deserialize<Config>(config);
         }
         catch (Exception e)
@@ -237,7 +248,8 @@ public static class Helpers
     public static Config FirstTime()
     {
         var config = new Config();
-        bool isFirstTime = !File.Exists("gpss.db");
+        string dbPath = Path.Combine(GetDataDirectory(), "gpss.db");
+        bool isFirstTime = !File.Exists(dbPath);
         if (isFirstTime)
         {
             Console.WriteLine(
@@ -276,7 +288,7 @@ public static class Helpers
                         using (var s = client.GetStreamAsync(
                                    "https://github.com/FlagBrew/local-gpss/releases/download/v1.0.0/gpss.db"))
                         {
-                            using (var fs = new FileStream("gpss.db", FileMode.OpenOrCreate))
+                            using (var fs = new FileStream(dbPath, FileMode.OpenOrCreate))
                             {
                                 s.Result.CopyTo(fs);
                             }
@@ -476,7 +488,8 @@ public static class Helpers
         try
         {
             string json = JsonSerializer.Serialize(config);
-            File.WriteAllText("./local-gpss.json", json);
+            string configPath = Path.Combine(GetDataDirectory(), "local-gpss.json");
+            File.WriteAllText(configPath, json);
         }
         catch (Exception e)
         {

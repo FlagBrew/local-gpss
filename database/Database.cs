@@ -13,7 +13,8 @@ public class Database
 
     private Database()
     {
-        _connection = new SqliteConnection("Data Source=gpss.db;foreign keys=true;");
+        string dbPath = Path.Combine(local_gpss.utils.Helpers.GetDataDirectory(), "gpss.db");
+        _connection = new SqliteConnection($"Data Source={dbPath};foreign keys=true;");
         _connection.Open();
 
         Migrate();
