@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -13,7 +15,7 @@ import (
 	"github.com/lrstanley/chix"
 )
 
-func httpServer() *http.Server {
+func httpServer(ctx context.Context) *http.Server {
 	chix.DefaultAPIPrefix = "/api/"
 
 	r := chi.NewRouter()
@@ -42,7 +44,9 @@ func httpServer() *http.Server {
 	return &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.HTTP.ListeningAddr, cfg.HTTP.Port),
 		Handler: r,
-
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
 		// Some sane defaults.
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,

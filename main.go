@@ -19,7 +19,7 @@ func main() {
 	ctx := setup()
 
 	logger.Infof("Starting HTTP server on %s:%d", cfg.HTTP.ListeningAddr, cfg.HTTP.Port)
-	if err := chix.RunContext(ctx, httpServer()); err != nil {
+	if err := chix.RunContext(ctx, httpServer(ctx)); err != nil {
 		db.Close()
 	}
 }
