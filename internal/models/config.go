@@ -1,0 +1,21 @@
+package models
+
+type Config struct {
+	Database DatabaseConfig `json:"database"`
+	HTTP     HTTPConfig     `json:"http"`
+	Misc     MiscConfig     `json:"misc"`
+}
+
+type DatabaseConfig struct {
+	DBType           string `json:"db_type" validate:"required,oneof=sqlite postgres mysql"`
+	ConnectionString string `json:"connection_string" validate:"required"`
+}
+
+type HTTPConfig struct {
+	Port          int    `json:"port" validate:"required,min=1,max=65535"`
+	ListeningAddr string `json:"listening_addr" validate:"required"`
+}
+
+type MiscConfig struct {
+	MigrateOriginalDb bool `json:"migrate_original_db"`
+}

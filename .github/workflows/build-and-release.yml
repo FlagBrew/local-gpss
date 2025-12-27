@@ -36,26 +36,46 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Publish ${{ matrix.arch }}
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+
+      - name: Build GpssConsole ${{ matrix.arch }}
         shell: bash
         run: |
-          dotnet publish -c Release -o ./output/${{ matrix.output }} --self-contained true \
+          cd GpssConsole && dotnet publish -c Release -o ./output/${{ matrix.output }} --self-contained true \
             -p:PublishReadyToRun=true -p:PublishSingleFile=true \
             -p:EnableCompressionInSingleFile=true \
             -r ${{ matrix.arch }}
 
       - name: Set execute permissions (Linux/macOS)
         if: runner.os != 'Windows'
-        run: chmod +x ./output/${{ matrix.output }}/local-gpss
+        run: cd GpssConsole && chmod +x ./output/${{ matrix.output }}/GpssConsole
+
+      - name: Build Local GPSS
+        shell: bash
+        run: |
+          go build \
+          -ldflags '-d -s -w -extldflags=-static' \
+          -tags=netgo,osusergo,static_build \
+          -installsuffix netgo \
+          -buildvcs=false \
+          -trimpath
+
+      - name: Copy GpssConsole to the bin folder
+        shell: bash
+        run: |
+          mkdir bin && cp GpssConsole/output/${{ matrix.output }}/GpssConsole/* ./bin/
 
       - name: Create ZIP archive
         shell: bash
         run: |
           cd output
           if [ "${{ runner.os }}" = "Windows" ]; then
-            7z a -tzip ../${{ matrix.output }}.zip ${{ matrix.output }}/*
+            7z a -tzip ../${{ matrix.output }}.zip local-gpss bin/*
           else
-            zip -r ../${{ matrix.output }}.zip ${{ matrix.output }}/*
+            zip -r ../${{ matrix.output }}.zip local-gpss bin/*
           fi
 
       - name: Upload Build Artifact
