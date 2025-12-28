@@ -307,9 +307,6 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 		return
 	}
 
-	// Now we need to reset the primary key IDs, we do this by getting the latest IDs
-	db.Pokemon.Query()
-
 	// Update the config to not migrate the db anymore
 	os.ReadFile("config.json")
 	cfg.Misc.MigrateOriginalDb = false

@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           go build \
-          -ldflags '-d -s -w -extldflags=-static' \
+          -ldflags '-s -w -extldflags=-static' \
           -tags=netgo,osusergo,static_build \
           -installsuffix netgo \
           -buildvcs=false \

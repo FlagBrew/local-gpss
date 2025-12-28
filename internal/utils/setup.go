@@ -5,18 +5,32 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/FlagBrew/local-gpss/internal/gui"
 	"github.com/FlagBrew/local-gpss/internal/models"
 	"github.com/apex/log"
 )
 
-func Setup(mode string) *models.Config {
+func Setup(ctx context.Context, mode string) *models.Config {
+	logger := log.FromContext(ctx)
 	cfg := loadConfig()
 
 	if cfg != nil {
 		return cfg
 	}
 
-	// TODO if cli then run through interactive setup using bubble
+	if mode == "docker" {
+		logger.Fatal("You're running in docker mode and did not volume mount the config.json, interactive set-up is not available for docker. Check the wiki for more information.")
+	}
+
+	app := gui.New()
+	err := app.Start()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to start interactive wizard")
+	}
+
+	// TODO Remove this once done testing
+	os.Exit(0)
+
 	return nil
 }
 

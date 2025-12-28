@@ -14,7 +14,7 @@ func setup() context.Context {
 	logger = cli.Logger
 
 	ctx := log.NewContext(context.Background(), logger)
-	cfg = utils.Setup(cli.Flags.Mode)
+	cfg = utils.Setup(ctx, cli.Flags.Mode)
 
 	db = database.New(ctx, &cfg.Database)
 	ctx = ent.NewContext(ctx, db)
