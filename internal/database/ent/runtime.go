@@ -2,8 +2,26 @@
 
 package ent
 
+import (
+	"github.com/FlagBrew/local-gpss/internal/database/ent/bundle"
+	"github.com/FlagBrew/local-gpss/internal/database/ent/pokemon"
+	"github.com/FlagBrew/local-gpss/internal/database/ent/schema"
+)
+
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	bundleFields := schema.Bundle{}.Fields()
+	_ = bundleFields
+	// bundleDescDownloadCount is the schema descriptor for download_count field.
+	bundleDescDownloadCount := bundleFields[2].Descriptor()
+	// bundle.DefaultDownloadCount holds the default value on creation for the download_count field.
+	bundle.DefaultDownloadCount = bundleDescDownloadCount.Default.(int)
+	pokemonFields := schema.Pokemon{}.Fields()
+	_ = pokemonFields
+	// pokemonDescDownloadCount is the schema descriptor for download_count field.
+	pokemonDescDownloadCount := pokemonFields[2].Descriptor()
+	// pokemon.DefaultDownloadCount holds the default value on creation for the download_count field.
+	pokemon.DefaultDownloadCount = pokemonDescDownloadCount.Default.(int)
 }

@@ -12,10 +12,9 @@ type Pokemon struct {
 
 func (Pokemon) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("id").Unique(),
 		field.Time("upload_datetime"),
 		field.String("download_code").Unique(),
-		field.Int("download_count"),
+		field.Int("download_count").Default(0),
 		field.String("generation"),
 		field.Bool("legal"),
 		field.String("base_64"),

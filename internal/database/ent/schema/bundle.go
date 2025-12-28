@@ -12,10 +12,9 @@ type Bundle struct {
 
 func (Bundle) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("id").Unique(),
 		field.Time("upload_datetime"),
 		field.String("download_code").Unique(),
-		field.Int("download_count"),
+		field.Int("download_count").Default(0),
 		field.Bool("legal"),
 		field.String("min_gen"),
 		field.String("max_gen"),

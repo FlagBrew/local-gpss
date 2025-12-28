@@ -62,6 +62,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultDownloadCount holds the default value on creation for the "download_count" field.
+	DefaultDownloadCount int
+)
+
 // OrderOption defines the ordering options for the Pokemon queries.
 type OrderOption func(*sql.Selector)
 

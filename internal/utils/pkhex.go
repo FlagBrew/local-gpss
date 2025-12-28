@@ -1,9 +1,13 @@
 package utils
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -51,4 +55,47 @@ func ExecGpssConsole[T any](ctx context.Context, args models.GpssConsoleArgs) (*
 		return nil, err
 	}
 	return &t, nil
+}
+
+func PrepareCall(r *http.Request, mode string) (*models.GpssConsoleArgs, int, error) {
+	generation := r.Header.Get("generation")
+	if generation == "" {
+		return nil, http.StatusBadRequest, fmt.Errorf("version header is required")
+	}
+
+	version := r.Header.Get("version")
+	if version == "" && mode == "legalize" {
+		return nil, http.StatusBadRequest, fmt.Errorf("version header is required")
+	}
+
+	args := models.GpssConsoleArgs{
+		Version:    version,
+		Generation: generation,
+		Mode:       mode,
+	}
+
+	err := r.ParseMultipartForm(2 * 1024 * 1024)
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("failed to parse form")
+	}
+
+	pkmn, _, err := r.FormFile("pkmn")
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("error reading pkmn file: %w", err)
+	}
+
+	defer pkmn.Close()
+
+	// Base64 encode the pokemon
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, pkmn); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("error reading pkmn file from body: %w", err)
+	}
+
+	pkmn.Close()
+	b64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	args.Pokemon = b64Str
+
+	return &args, http.StatusOK, nil
 }

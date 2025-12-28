@@ -39,6 +39,14 @@ func (_c *BundleCreate) SetDownloadCount(v int) *BundleCreate {
 	return _c
 }
 
+// SetNillableDownloadCount sets the "download_count" field if the given value is not nil.
+func (_c *BundleCreate) SetNillableDownloadCount(v *int) *BundleCreate {
+	if v != nil {
+		_c.SetDownloadCount(*v)
+	}
+	return _c
+}
+
 // SetLegal sets the "legal" field.
 func (_c *BundleCreate) SetLegal(v bool) *BundleCreate {
 	_c.mutation.SetLegal(v)
@@ -54,12 +62,6 @@ func (_c *BundleCreate) SetMinGen(v string) *BundleCreate {
 // SetMaxGen sets the "max_gen" field.
 func (_c *BundleCreate) SetMaxGen(v string) *BundleCreate {
 	_c.mutation.SetMaxGen(v)
-	return _c
-}
-
-// SetID sets the "id" field.
-func (_c *BundleCreate) SetID(v int) *BundleCreate {
-	_c.mutation.SetID(v)
 	return _c
 }
 
@@ -85,6 +87,7 @@ func (_c *BundleCreate) Mutation() *BundleMutation {
 
 // Save creates the Bundle in the database.
 func (_c *BundleCreate) Save(ctx context.Context) (*Bundle, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -107,6 +110,14 @@ func (_c *BundleCreate) Exec(ctx context.Context) error {
 func (_c *BundleCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *BundleCreate) defaults() {
+	if _, ok := _c.mutation.DownloadCount(); !ok {
+		v := bundle.DefaultDownloadCount
+		_c.mutation.SetDownloadCount(v)
 	}
 }
 
@@ -144,10 +155,8 @@ func (_c *BundleCreate) sqlSave(ctx context.Context) (*Bundle, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != _node.ID {
-		id := _spec.ID.Value.(int64)
-		_node.ID = int(id)
-	}
+	id := _spec.ID.Value.(int64)
+	_node.ID = int(id)
 	_c.mutation.id = &_node.ID
 	_c.mutation.done = true
 	return _node, nil
@@ -158,10 +167,6 @@ func (_c *BundleCreate) createSpec() (*Bundle, *sqlgraph.CreateSpec) {
 		_node = &Bundle{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(bundle.Table, sqlgraph.NewFieldSpec(bundle.FieldID, field.TypeInt))
 	)
-	if id, ok := _c.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = id
-	}
 	if value, ok := _c.mutation.UploadDatetime(); ok {
 		_spec.SetField(bundle.FieldUploadDatetime, field.TypeTime, value)
 		_node.UploadDatetime = value
@@ -223,6 +228,7 @@ func (_c *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*BundleMutation)
 				if !ok {
@@ -249,7 +255,7 @@ func (_c *BundleCreateBulk) Save(ctx context.Context) ([]*Bundle, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
+				if specs[i].ID.Value != nil {
 					id := specs[i].ID.Value.(int64)
 					nodes[i].ID = int(id)
 				}
