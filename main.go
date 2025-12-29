@@ -37,7 +37,7 @@ func main() {
 	logger.Infof("Starting HTTP server on %s:%d", cfg.HTTP.ListeningAddr, cfg.HTTP.Port)
 	if err := chix.RunContext(ctx, httpServer(ctx)); err != nil {
 		exit()
-		if err.Error() != "received signal: interrupt" && cli.Flags.Mode == "cli" {
+		if err.Error() != "received signal:" && cli.Flags.Mode == "cli" {
 			if app == nil {
 				app = gui.New(cfg, false)
 			}

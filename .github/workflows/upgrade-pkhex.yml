@@ -84,6 +84,6 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add deps/PKHeX.Core.dll deps/PKHeX.Core.AutoMod.dll
+          git add GpssConsole/deps/PKHeX.Core.dll GpssConsole/deps/PKHeX.Core.AutoMod.dll
           git commit -m "Update PKHeX.Core.dll and PKHeX.Core.AutoMod.dll"
           git push origin master

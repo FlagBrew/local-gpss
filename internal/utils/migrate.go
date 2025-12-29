@@ -401,6 +401,9 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 	cfg.Misc.RecheckLegality = false
 	SetConfig(ctx, cfg)
 
+	// Close the old DB before removing
+	oldDb.Close()
+
 	// Remove the old DB
 	err = os.Remove("gpss.db")
 	if err != nil {
