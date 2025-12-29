@@ -187,7 +187,7 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 		failedCount := atomic.Int64{}
 		logger.Info("Rechecking legal information, please wait...")
 		eg, _ := errgroup.WithContext(ctx)
-		eg.SetLimit(30)
+		eg.SetLimit(10)
 		counter := 0
 		for i, oldPkmn := range oldPokemons {
 			if cfg.FancyScreen {

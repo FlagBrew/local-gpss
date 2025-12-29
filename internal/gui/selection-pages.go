@@ -42,7 +42,7 @@ func (g *Gui) databaseDownload(p *tview.Pages) tview.Primitive {
 	if _, err := os.Stat("gpss.db"); os.IsNotExist(err) {
 
 		frame.AddText("Local GPSS has detected you do not have an already existing database, would you like to download the archived database?", true, tview.AlignLeft, tcell.ColorYellow)
-		list.AddItem("Yes and Re-run legality checks", "This will download the database from GitHub and have the legality checks re-done (this will take some time)", '1', func() {
+		list.AddItem("Yes and Re-run legality checks", "This will download the database from GitHub and have the legality checks re-done (this will take some time and is a heavy operation)", '1', func() {
 			g.config.Misc.DownloadOriginalDb = true
 			g.config.Misc.RecheckLegality = true
 			g.config.Misc.MigrateOriginalDb = true
