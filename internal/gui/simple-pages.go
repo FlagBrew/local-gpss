@@ -1,9 +1,11 @@
 package gui
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/go-sql-driver/mysql"
@@ -107,5 +109,105 @@ Rerun Legality Check: %t
 	frame.SetBorder(true)
 	frame.SetTitle("Local GPSS - Settings Review")
 
+	return frame
+}
+
+func (g *Gui) mainPage(p *tview.Pages) tview.Primitive {
+
+	textView := tview.NewTextView()
+	frame := tview.NewFrame(textView)
+	followLogs := true
+	followLogsText := "[green]f/F - Follow Logs: On[-:-:-:-]"
+	monCount := -1
+	bundleCount := -1
+	firstQuery := true
+
+	redrawFrame := func() {
+		frame.Clear()
+		frame.AddText(fmt.Sprintf("[red]ESC/Q/q - exit[-:-:-:-] | [red]c/C - Clear Logs [-:-:-:-] | %s", followLogsText), false, tview.AlignLeft, tcell.ColorYellow)
+		frame.AddText(fmt.Sprintf("Listening on %s:%d", g.config.HTTP.ListeningAddr, g.config.HTTP.Port), false, tview.AlignLeft, tcell.ColorYellow)
+		if monCount != -1 && bundleCount != -1 {
+			frame.AddText(fmt.Sprintf("Pokemon in DB: %d, Bundles in DB: %d", monCount, bundleCount), false, tview.AlignRight, tcell.ColorYellow)
+		} else {
+			frame.AddText("DB Stats Loading, Please wait...", false, tview.AlignRight, tcell.ColorYellow)
+		}
+
+	}
+
+	frame.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyRune {
+			switch event.Rune() {
+			case 'f', 'F':
+				followLogs = !followLogs
+				if followLogs {
+					followLogsText = "[green]f/F - Follow Logs: On[-:-:-:-]"
+				} else {
+					followLogsText = "[red]f/F - Follow Logs: Off[-:-:-:-]"
+				}
+
+				redrawFrame()
+			case 'c', 'C':
+				textView.Clear()
+			case 'q', 'Q':
+				g.Stop()
+			}
+
+		}
+		return event
+	})
+
+	go func() {
+		for {
+			if firstQuery {
+				time.Sleep(500 * time.Millisecond)
+			} else {
+				time.Sleep(5 * time.Second)
+			}
+
+			if g.db == nil {
+				continue
+			}
+
+			mons, err := g.db.Pokemon.Query().Count(context.Background())
+			if err == nil {
+				monCount = mons
+			}
+
+			bundles, err := g.db.Bundle.Query().Count(context.Background())
+			if err == nil {
+				bundleCount = bundles
+			}
+
+			firstQuery = false
+			redrawFrame()
+			if !g.running {
+				break
+			}
+		}
+
+	}()
+
+	go func() {
+		for {
+			g.app.QueueUpdateDraw(func() {
+				if followLogs {
+					textView.ScrollToEnd()
+				}
+			})
+			time.Sleep(time.Millisecond * 500)
+			if !g.running {
+				break
+			}
+		}
+	}()
+
+	g.logOutput = textView
+
+	textView.SetMaxLines(100)
+
+	redrawFrame()
+
+	frame.SetBorder(true)
+	frame.SetTitle("Local GPSS")
 	return frame
 }

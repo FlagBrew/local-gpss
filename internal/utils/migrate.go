@@ -188,8 +188,17 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 		logger.Info("Rechecking legal information, please wait...")
 		eg, _ := errgroup.WithContext(ctx)
 		eg.SetLimit(30)
+		counter := 0
 		for i, oldPkmn := range oldPokemons {
-			fmt.Printf("Checked: %d/%d, failed: %d\r", i+1, len(oldPokemons), failedCount.Load())
+			if cfg.FancyScreen {
+				counter++
+				if counter == 100 {
+					counter = 0
+					logger.Infof("Checked: %d/%d, failed: %d", i+1, len(oldPokemons), failedCount.Load())
+				}
+			} else {
+				fmt.Printf("Checked: %d/%d, failed: %d", i+1, len(oldPokemons), failedCount.Load())
+			}
 
 			eg.Go(func() error {
 				// Call GpssConsole to get the latest info
@@ -221,8 +230,18 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 	}
 
 	logger.Info("Inserting pokemons to database, please wait...")
+	counter := 0
 	for i, oldPkmn := range oldPokemons {
-		fmt.Printf("Created: %d/%d\r", i+1, len(oldPokemons))
+		if cfg.FancyScreen {
+			counter++
+			if counter == 100 {
+				counter = 0
+				logger.Infof("Created: %d/%d", i+1, len(oldPokemons))
+			}
+		} else {
+			fmt.Printf("Created: %d/%d\r", i+1, len(oldPokemons))
+		}
+
 		newPkmn, err := tx.Pokemon.Create().
 			SetUploadDatetime(oldPkmn.UploadDateTime).
 			SetDownloadCode(oldPkmn.DownloadCode).
@@ -247,8 +266,17 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 	bundleMap := map[int]*ent.Bundle{}
 	bundleBindingMap := map[int]bundleBinding{}
 	logger.Info("Inserting bundles to database, please wait...")
+	counter = 0
 	for i, ob := range oldBundles {
-		fmt.Printf("Created: %d/%d\r", i+1, len(oldBundles))
+		if cfg.FancyScreen {
+			counter++
+			if counter == 100 {
+				counter = 0
+				logger.Infof("Created: %d/%d", i+1, len(oldBundles))
+			}
+		} else {
+			fmt.Printf("Created: %d/%d\r", i+1, len(oldBundles))
+		}
 		newBundle, err := tx.Bundle.Create().
 			SetDownloadCode(ob.DownloadCode).
 			SetUploadDatetime(ob.UploadDateTime).
@@ -273,8 +301,18 @@ func MigrateOriginalDb(ctx context.Context, cfg *models.Config) {
 
 	genMap := map[int][]string{}
 	logger.Info("Attaching pokemon to bundles, please wait...")
+	counter = 0
 	for i, ob := range oldPokemonBundles {
-		fmt.Printf("Created: %d/%d\r", i+1, len(oldPokemonBundles))
+		if cfg.FancyScreen {
+			counter++
+			if counter == 100 {
+				counter = 0
+				logger.Infof("Created: %d/%d", i+1, len(oldPokemonBundles))
+			}
+		} else {
+			fmt.Printf("Created: %d/%d\r", i+1, len(oldPokemonBundles))
+		}
+
 		// get the bindings
 		loadedVal, ok := pkmnBindingMap.Load(ob.PokemonID)
 		if !ok {

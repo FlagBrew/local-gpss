@@ -95,13 +95,13 @@ func (g *Gui) displayMode(p *tview.Pages) tview.Primitive {
 	list := tview.NewList()
 
 	list.AddItem("simple", "Plain and simple, no fancy terminal GUI, just plain-ol logs.", '1', func() {
-		p.AddPage("confirm", g.confirmationPage(p), true, false)
 		g.config.FancyScreen = false
+		p.AddPage("confirm", g.confirmationPage(p), true, false)
 		p.SwitchToPage("confirm")
 	})
 	list.AddItem("fancy", "Displays the application in a fancy layout similar to that of the set-up wizard, will allow for updating configuration file within the app.", '2', func() {
-		p.AddPage("confirm", g.confirmationPage(p), true, false)
 		g.config.FancyScreen = true
+		p.AddPage("confirm", g.confirmationPage(p), true, false)
 		p.SwitchToPage("confirm")
 	})
 

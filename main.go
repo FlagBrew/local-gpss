@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/FlagBrew/local-gpss/internal/database/ent"
+	"github.com/FlagBrew/local-gpss/internal/gui"
 	"github.com/FlagBrew/local-gpss/internal/models"
 	"github.com/apex/log"
 	"github.com/lrstanley/chix"
@@ -13,6 +14,7 @@ var (
 	logger log.Interface
 	db     *ent.Client
 	cfg    *models.Config
+	app    *gui.Gui
 )
 
 func main() {
@@ -21,5 +23,8 @@ func main() {
 	logger.Infof("Starting HTTP server on %s:%d", cfg.HTTP.ListeningAddr, cfg.HTTP.Port)
 	if err := chix.RunContext(ctx, httpServer(ctx)); err != nil {
 		db.Close()
+		if app != nil {
+			app.Stop()
+		}
 	}
 }
