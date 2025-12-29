@@ -20,9 +20,9 @@ jobs:
           - os: ubuntu-latest
             arch: linux-arm64
             output: linux-arm64
-#          - os: macos-latest
-#            arch: osx-x64
-#            output: osx64
+          - os: macos-latest
+            arch: osx-x64
+            output: osx64
           - os: windows-latest
             arch: win-x64
             output: win64
@@ -54,14 +54,26 @@ jobs:
         run: cd GpssConsole && chmod +x ./output/${{ matrix.output }}/GpssConsole
 
       - name: Build Local GPSS
+        if: runner.os != 'macOS'
         shell: bash
         run: |
           go build \
-          -ldflags '-s -w -extldflags=-static' \
+          -ldflags '-d -s -w -extldflags=-static' \
           -tags=netgo,osusergo,static_build \
           -installsuffix netgo \
           -buildvcs=false \
           -trimpath
+
+      - name: Build Local GPSS (Mac OS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          go build \
+          -tags=netgo,osusergo,static_build \
+          -installsuffix netgo \
+          -buildvcs=false \
+          -trimpath
+
 
       - name: Copy GpssConsole to the bin folder
         shell: bash
@@ -71,9 +83,8 @@ jobs:
       - name: Create ZIP archive
         shell: bash
         run: |
-          cd output
           if [ "${{ runner.os }}" = "Windows" ]; then
-            7z a -tzip ../${{ matrix.output }}.zip local-gpss bin/*
+            7z a -tzip ../${{ matrix.output }}.zip local-gpss.exe bin/*
           else
             zip -r ../${{ matrix.output }}.zip local-gpss bin/*
           fi
