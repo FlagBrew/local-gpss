@@ -1,9 +1,10 @@
 package models
 
 type Config struct {
-	Database DatabaseConfig `json:"database"`
-	HTTP     HTTPConfig     `json:"http"`
-	Misc     MiscConfig     `json:"misc"`
+	FancyScreen bool           `json:"fancy_screen"`
+	Database    DatabaseConfig `json:"database"`
+	HTTP        HTTPConfig     `json:"http"`
+	Misc        MiscConfig     `json:"misc"`
 }
 
 type DatabaseConfig struct {
@@ -17,5 +18,7 @@ type HTTPConfig struct {
 }
 
 type MiscConfig struct {
-	MigrateOriginalDb bool `json:"migrate_original_db"`
+	RecheckLegality    bool `json:"recheck_legality"`
+	MigrateOriginalDb  bool `json:"migrate_original_db"`
+	DownloadOriginalDb bool `json:"download_original_db"`
 }

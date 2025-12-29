@@ -1,23 +1,30 @@
 package gui
 
 import (
+	"os"
+
 	"github.com/FlagBrew/local-gpss/internal/models"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 type Gui struct {
-	app           *tview.Application
-	createdConfig models.Config
+	app    *tview.Application
+	config *models.Config
 }
 
-func New() *Gui {
+func New(config *models.Config) *Gui {
 	app := &Gui{
-		app:           tview.NewApplication(),
-		createdConfig: models.Config{},
+		app:    tview.NewApplication(),
+		config: &models.Config{},
+	}
+
+	if config != nil {
+		app.config = config
 	}
 
 	app.app.EnableMouse(true)
+
 	app.Init()
 
 	return app
@@ -25,17 +32,17 @@ func New() *Gui {
 
 func (g *Gui) Init() {
 	pages := tview.NewPages()
-	pages.AddPage("main", g.introPage(pages), true, true)
-	// Database Pages
+	pages.AddPage("setup", g.introPage(pages), true, true)
 	pages.AddPage("database-type", g.databaseSelection(pages), true, false)
-	pages.AddPage("sqlite", g.databaseConfigPage(pages, "sqlite"), true, false)
-	pages.AddPage("mysql", g.databaseConfigPage(pages, "mysql"), true, false)
-	pages.AddPage("postgres", g.databaseConfigPage(pages, "postgres"), true, false)
+
+	// Other settings
+	pages.AddPage("display-config", g.displayMode(pages), true, false)
 
 	pages.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEscape:
 			g.app.Stop()
+			os.Exit(0)
 		}
 		return event
 	})

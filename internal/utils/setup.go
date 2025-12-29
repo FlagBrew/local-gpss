@@ -22,16 +22,19 @@ func Setup(ctx context.Context, mode string) *models.Config {
 		logger.Fatal("You're running in docker mode and did not volume mount the config.json, interactive set-up is not available for docker. Check the wiki for more information.")
 	}
 
-	app := gui.New()
+	// Create a new blank config
+	cfg = &models.Config{}
+
+	app := gui.New(cfg)
 	err := app.Start()
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to start interactive wizard")
 	}
 
-	// TODO Remove this once done testing
-	os.Exit(0)
+	// Save the config once done.
+	SetConfig(ctx, cfg)
 
-	return nil
+	return cfg
 }
 
 func SetConfig(ctx context.Context, cfg *models.Config) {
