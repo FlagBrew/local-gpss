@@ -42,7 +42,7 @@ func (g *Gui) Init(wizard bool) {
 
 	if wizard {
 		pages.AddPage("setup", g.introPage(pages), true, true)
-		pages.AddPage("database-type", g.databaseSelection(pages), true, false)
+		pages.AddPage("database-type", g.databaseSelection(pages, false, false), true, false)
 		pages.AddPage("display-config", g.displayMode(pages), true, false)
 	} else {
 		pages.AddPage("main", g.mainPage(pages), true, true)
@@ -63,7 +63,24 @@ func (g *Gui) Init(wizard bool) {
 	g.app.SetRoot(pages, true)
 }
 
-func (g *Gui) Start() error {
+func (g *Gui) Start(troubleshoot bool, passedErr error) error {
+	if troubleshoot {
+		pages := tview.NewPages()
+		pages.AddPage("troubleshoot", g.troubleshootPage(pages, passedErr), true, true)
+		pages.AddPage("database-type", g.databaseSelection(pages, true, true), true, false)
+		pages.AddPage("display-config", g.displayMode(pages), true, false)
+		g.app.SetRoot(pages, true)
+
+		pages.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Key() {
+			case tcell.KeyEscape:
+				g.app.Stop()
+				os.Exit(0)
+			}
+			return event
+		})
+	}
+
 	g.running = true
 	err := g.app.Run()
 	if err != nil {
@@ -85,4 +102,8 @@ func (g *Gui) GetLogOutput() io.Writer {
 
 func (g *Gui) SetDb(db *ent.Client) {
 	g.db = db
+}
+
+func (g *Gui) IsRunning() bool {
+	return g.running
 }

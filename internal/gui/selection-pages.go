@@ -7,19 +7,19 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (g *Gui) databaseSelection(p *tview.Pages) tview.Primitive {
+func (g *Gui) databaseSelection(p *tview.Pages, allowExistingSqlite, skipImport bool) tview.Primitive {
 	list := tview.NewList()
 
 	list.AddItem("sqlite", "Easiest to use, creates a database file on disk, good if running for yourself only, [::b]if you have no experience with databases, use this option", '1', func() {
-		p.AddPage("db-config", g.databaseConfigPage(p, "sqlite"), true, false)
+		p.AddPage("db-config", g.databaseConfigPage(p, "sqlite", allowExistingSqlite, skipImport), true, false)
 		p.SwitchToPage("db-config")
 	})
 	list.AddItem("MySql", "Requires a running instance of a MySql database recommended if sharing Local GPSS instance with others", '2', func() {
-		p.AddPage("db-config", g.databaseConfigPage(p, "mysql"), true, false)
+		p.AddPage("db-config", g.databaseConfigPage(p, "mysql", false, skipImport), true, false)
 		p.SwitchToPage("db-config")
 	})
 	list.AddItem("Postgres", "Requires a running instance of a Postgres database, recommended if sharing Local GPSS instance with others. Alternative (and arguably better than) to MySql", '3', func() {
-		p.AddPage("db-config", g.databaseConfigPage(p, "postgres"), true, false)
+		p.AddPage("db-config", g.databaseConfigPage(p, "postgres", false, skipImport), true, false)
 		p.SwitchToPage("db-config")
 	})
 

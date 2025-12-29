@@ -13,6 +13,37 @@ import (
 	"github.com/rivo/tview"
 )
 
+func (g *Gui) troubleshootPage(p *tview.Pages, err error) tview.Primitive {
+	textView := tview.NewTextView().
+		SetDynamicColors(true).
+		SetRegions(true).
+		SetWordWrap(true)
+
+	textView.SetText(fmt.Sprintf(`Uh-Oh Looks like something went wrong with Local GPSS!
+
+The following is the error message: %s
+
+[::b]Please take a screenshot of this message when asking for support as it will help the developers diagnose the problem![-:-:-:-]
+
+As this is likely a problem with the configuration, we'll have you go through the wizard again (with the data pre-filled)
+and the validators should catch any issues that have arisen.
+`, err.Error()))
+
+	textView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEnter:
+			p.SwitchToPage("database-type")
+		}
+		return event
+	})
+
+	frame := tview.NewFrame(textView)
+	frame.AddText("[red]ESC - exit[-:-:-:-] [yellow] Enter - continue", false, tview.AlignLeft, tcell.ColorYellow)
+	frame.SetBorder(true).SetTitle("Local GPSS - Troubleshooting")
+
+	return frame
+}
+
 func (g *Gui) introPage(p *tview.Pages) tview.Primitive {
 	textView := tview.NewTextView().
 		SetDynamicColors(true).

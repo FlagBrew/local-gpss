@@ -23,7 +23,7 @@ func setup() context.Context {
 		logger = cli.Logger
 		ctx = log.NewContext(ctx, logger)
 		go func() {
-			app.Start()
+			app.Start(false, nil)
 			cancel()
 		}()
 	}

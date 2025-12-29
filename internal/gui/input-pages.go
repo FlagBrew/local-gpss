@@ -28,7 +28,7 @@ var blackListedChars = []rune{
 	'\'', '$', '%', '@', '#', '!', ';', ':', '/', '*', '?', '|', '>', '<', '&', '\\',
 }
 
-func (g *Gui) databaseConfigPage(p *tview.Pages, database string) tview.Primitive {
+func (g *Gui) databaseConfigPage(p *tview.Pages, database string, allowExistingSqlite, skipImport bool) tview.Primitive {
 	form := tview.NewForm()
 
 	var values []string
@@ -41,11 +41,12 @@ func (g *Gui) databaseConfigPage(p *tview.Pages, database string) tview.Primitiv
 		values = make([]string, 1)
 		fieldNames = []string{"File Name"}
 		if connectionString != "" && strings.HasPrefix(connectionString, "file:") {
-			uri, err := url.Parse(connectionString)
-			if err != nil {
-				values[0] = "local-gpss.db"
+			val := strings.TrimPrefix(connectionString, "file:")
+			vals := strings.Split(val, "?")
+			if len(vals) > 1 {
+				values[0] = vals[0]
 			} else {
-				values[0] = uri.Hostname()
+				values[0] = "local-gpss.db"
 			}
 		} else {
 			values[0] = "local-gpss.db"
@@ -142,12 +143,12 @@ func (g *Gui) databaseConfigPage(p *tview.Pages, database string) tview.Primitiv
 			} else if os.IsNotExist(err) {
 				connectionString = fmt.Sprintf("file:%s?cache=shared&_pragma=foreign_keys(1)", path)
 				break
-			} else {
+			} else if !allowExistingSqlite {
 				errors = append(errors, "File Name: this file already exists")
 			}
 
 			// Try connecting
-			db, err := sql.Open(dialect.SQLite, connectionString)
+			db, err := sql.Open("sqlite", connectionString)
 			if err != nil {
 				errors = append(errors, "Sqlite connection error: "+err.Error())
 				break
@@ -221,8 +222,13 @@ func (g *Gui) databaseConfigPage(p *tview.Pages, database string) tview.Primitiv
 				ConnectionString: connectionString,
 			}
 
-			p.AddPage("database-import", g.databaseDownload(p), true, false)
-			p.SwitchToPage("database-import")
+			if skipImport {
+				p.AddPage("http-config", g.httpConfigPage(p), true, false)
+				p.SwitchToPage("http-config")
+			} else {
+				p.AddPage("database-import", g.databaseDownload(p), true, false)
+				p.SwitchToPage("database-import")
+			}
 
 		}
 

@@ -26,7 +26,7 @@ func Setup(ctx context.Context, mode string) *models.Config {
 	cfg = &models.Config{}
 
 	app := gui.New(cfg, true)
-	err := app.Start()
+	err := app.Start(false, nil)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to start interactive wizard")
 	}
