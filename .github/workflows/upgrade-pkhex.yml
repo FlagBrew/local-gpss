@@ -59,8 +59,8 @@ jobs:
 
       - name: Prepare dlls
         run: |
-          xcopy "${{ github.workspace }}\PKHeX-Plugins\PKHeX.Core.AutoMod\bin\Any CPU\Release\net9.0\PKHeX.Core.AutoMod.dll" ${{ github.workspace }}\deps /Y
-          xcopy "${{ github.workspace }}\PKHeX\PKHeX.Core\bin\Any CPU\Release\net9.0\PKHeX.Core.dll" ${{ github.workspace }}\deps /Y
+          xcopy "${{ github.workspace }}\PKHeX-Plugins\PKHeX.Core.AutoMod\bin\Any CPU\Release\net9.0\PKHeX.Core.AutoMod.dll" ${{ github.workspace }}\GpssConsole\deps /Y
+          xcopy "${{ github.workspace }}\PKHeX\PKHeX.Core\bin\Any CPU\Release\net9.0\PKHeX.Core.dll" ${{ github.workspace }}\GpssConsole\deps /Y
 
       - name: Remove other repo directories
         run: |
@@ -69,21 +69,21 @@ jobs:
           # Remove PKHeX directory
           Remove-Item -Recurse -Force ${{ github.workspace }}/PKHeX
 
-      - name: Restore NuGet dependencies for local-gpss
-        run: nuget restore ${{ github.workspace }}/local-gpss.sln -NoCache
+      - name: Restore NuGet dependencies for GpssConsole
+        run: nuget restore ${{ github.workspace }}/GpssConsole/GpssConsole.sln -NoCache
         
-      - name: Build local-gpss.csproj
+      - name: Build GpssConsole.csproj
         run: |
-          msbuild ${{ github.workspace }}/local-gpss.csproj /p:Configuration=Release /p:Platform="Any CPU"
+          msbuild ${{ github.workspace }}/GpssConsole.csproj /p:Configuration=Release /p:Platform="Any CPU"
         continue-on-error: true
-        id: local-gpss-build
+        id: GpssConsole-build
         
       # If the build was successful, we're good to commit the new DLLs.
       - name: Commit and Push DLLs
-        if: steps.local-gpss-build.outcome == 'success'
+        if: steps.GpssConsole-build.outcome == 'success'
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add deps/PKHeX.Core.dll deps/PKHeX.Core.AutoMod.dll
+          git add GpssConsole/deps/PKHeX.Core.dll GpssConsole/deps/PKHeX.Core.AutoMod.dll
           git commit -m "Update PKHeX.Core.dll and PKHeX.Core.AutoMod.dll"
           git push origin master

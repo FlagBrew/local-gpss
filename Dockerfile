@@ -1,23 +1,36 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-USER $APP_UID
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["local-gpss.csproj", "./"]
-RUN dotnet restore "local-gpss.csproj"
+COPY ./GpssConsole .
+
+RUN dotnet publish GpssConsole.csproj -c Release -o ./output/ \
+    --self-contained true \
+    -p:PublishReadyToRun=true -p:PublishSingleFile=true \
+    -p:EnableCompressionInSingleFile=true
+
+FROM golang:alpine AS go-build
+
+WORKDIR /app
 COPY . .
-WORKDIR "/src/"
-RUN dotnet build "local-gpss.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "local-gpss.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN CGO_ENABLED=0 go build \
+    -ldflags '-d -s -w -extldflags=-static' \
+    -tags=netgo,osusergo,static_build \
+    -installsuffix netgo \
+    -buildvcs=false \
+    -trimpath \
+    -o local-gpss
 
-FROM base AS final
+FROM alpine:latest AS runner
+
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "local-gpss.dll"]
+
+RUN mkdir bin
+
+COPY --from=dotnet-build /app/output/GpssConsole ./bin/GpssConsole
+COPY --from=go-build /app/local-gpss ./local-gpss
+
+RUN echo "MODE=docker" > .env
+
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CMD ["/app/local-gpss"]

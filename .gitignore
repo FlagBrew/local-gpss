@@ -10,3 +10,6 @@ flagbrew2_*.json
 .idea/
 output/
 local-gpss.json
+*.db
+config.json
+.env
