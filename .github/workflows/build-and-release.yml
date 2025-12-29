@@ -53,12 +53,23 @@ jobs:
         if: runner.os != 'Windows'
         run: cd GpssConsole && chmod +x ./output/${{ matrix.output }}/GpssConsole
 
-      - name: Build Local GPSS
-        if: runner.os != 'macOS'
+      - name: Build Local GPSS Linux
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           go build \
           -ldflags '-d -s -w -extldflags=-static' \
+          -tags=netgo,osusergo,static_build \
+          -installsuffix netgo \
+          -buildvcs=false \
+          -trimpath
+
+      - name: Build Local GPSS Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          go build \
+          -ldflags '-s -w -extldflags=-static' \
           -tags=netgo,osusergo,static_build \
           -installsuffix netgo \
           -buildvcs=false \
@@ -84,9 +95,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            7z a -tzip ../${{ matrix.output }}.zip local-gpss.exe bin/*
+            7z a -tzip ./${{ matrix.output }}.zip local-gpss.exe bin/*
           else
-            zip -r ../${{ matrix.output }}.zip local-gpss bin/*
+            zip -r ./${{ matrix.output }}.zip local-gpss bin/*
           fi
 
       - name: Upload Build Artifact
