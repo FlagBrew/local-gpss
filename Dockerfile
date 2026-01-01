@@ -31,6 +31,7 @@ COPY --from=dotnet-build /app/output/GpssConsole ./bin/GpssConsole
 COPY --from=go-build /app/local-gpss ./local-gpss
 
 RUN echo "MODE=docker" > .env
+RUN apk add --no-cache gcompat libstdc++ libgcc icu-libs
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CMD ["/app/local-gpss"]
