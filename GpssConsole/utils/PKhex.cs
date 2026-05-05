@@ -92,7 +92,7 @@ public class Pkhex
             TID16 = pokemon.TID16,
             Language = pokemon.Language,
             Gender = pokemon.OriginalTrainerGender,
-            Generation = pokemon.Context.Generation()
+            Generation = pokemon.Format
         };
     }
 }
