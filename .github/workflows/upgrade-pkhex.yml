@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout PKHeX Plugins
         run: |
@@ -24,7 +24,7 @@ jobs:
           git clone -q --depth=5 --branch=master https://github.com/kwsch/PKHeX.git ${{ github.workspace }}/PKHeX
 
       - name: Setup .NET 10.0
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
@@ -35,7 +35,7 @@ jobs:
           echo "$(pwd)/.nuget/nuget.commandline/tools" >> $GITHUB_PATH
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
 
       - name: Restore NuGet dependencies for PKHeX-Plugins
         run: nuget restore ${{ github.workspace }}/PKHeX-Plugins/PKHeX-Plugins.sln
