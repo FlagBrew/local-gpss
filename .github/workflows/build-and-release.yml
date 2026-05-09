@@ -17,9 +17,11 @@ jobs:
           - os: ubuntu-latest
             arch: linux-x64
             output: linux64
+            goarch: amd64
           - os: ubuntu-latest
             arch: linux-arm64
             output: linux-arm64
+            goarch: arm64
           - os: macos-latest
             arch: osx-x64
             output: osx64
@@ -55,6 +57,9 @@ jobs:
 
       - name: Build Local GPSS Linux
         if: runner.os == 'Linux'
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
         shell: bash
         run: |
           go build \
