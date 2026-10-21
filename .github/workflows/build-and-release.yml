@@ -26,6 +26,10 @@ jobs:
             arch: osx-x64
             output: osx64
             goarch: amd64
+          - os: macos-latest
+            arch: osx-arm64
+            output: osx-arm64
+            goarch: arm64
           - os: windows-latest
             arch: win-x64
             output: win64
