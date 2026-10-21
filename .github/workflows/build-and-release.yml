@@ -51,7 +51,7 @@ jobs:
       - name: Build GpssConsole ${{ matrix.arch }}
         shell: bash
         run: |
-          cd GpssConsole && dotnet publish -c Release -o ./output/${{ matrix.output }} --self-contained true \
+          cd GpssConsole && dotnet publish GpssConsole.csproj -c Release -o ./output/${{ matrix.output }} --self-contained true \
             -p:PublishReadyToRun=true -p:PublishSingleFile=true \
             -p:EnableCompressionInSingleFile=true \
             -r ${{ matrix.arch }}
