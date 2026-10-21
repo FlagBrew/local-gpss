@@ -444,6 +444,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.WithError(err).Error("failed to parse multipart form")
 		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+		return
 	}
 
 	tx, err := db.Tx(r.Context())
@@ -536,7 +537,11 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
 		return
 	} else if existingBun != nil && len(existingBun.Edges.Pokemons) == count {
-		tx.Commit()
+		if err := tx.Commit(); err != nil {
+			logger.WithError(err).Error("failed to commit transaction")
+			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+			return
+		}
 		chix.JSON(w, r, http.StatusOK, chix.M{"code": existingBun.DownloadCode})
 		return
 	}
@@ -559,7 +564,11 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		logger.WithError(err).Error("failed to commit transaction")
+		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+		return
+	}
 	chix.JSON(w, r, http.StatusOK, chix.M{"code": newBundle.DownloadCode})
 
 }
