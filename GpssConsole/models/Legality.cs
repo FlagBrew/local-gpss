@@ -25,8 +25,12 @@ public struct AutoLegalizationResult
         Ran = ran;
 
         if (pokemon == null) return;
-        PokemonBase64 = Convert.ToBase64String(pokemon.SIZE_PARTY > pokemon.SIZE_STORED
-            ? pokemon.DecryptedPartyData
-            : pokemon.DecryptedBoxData);
+        bool useParty = pokemon.SIZE_PARTY > pokemon.SIZE_STORED;
+        byte[] data = new byte[useParty ? pokemon.SIZE_PARTY : pokemon.SIZE_STORED];
+        if (useParty)
+            pokemon.WriteDecryptedDataParty(data);
+        else
+            pokemon.WriteDecryptedDataStored(data);
+        PokemonBase64 = Convert.ToBase64String(data);
     }
 }

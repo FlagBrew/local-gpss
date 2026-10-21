@@ -1,4 +1,4 @@
-name: Upgrade PKHeX
+name: Upgrade PKHeX DLLs
 
 on:
   workflow_dispatch:
@@ -23,10 +23,10 @@ jobs:
         run: |
           git clone -q --depth=5 --branch=master https://github.com/kwsch/PKHeX.git ${{ github.workspace }}/PKHeX
 
-      - name: Setup .NET 9.0
+      - name: Setup .NET 10.0
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Install NuGet
         run: |
@@ -51,7 +51,7 @@ jobs:
         shell: powershell
         run: |
           $nugetver = (Get-ChildItem "$env:UserProfile/.nuget/packages/pkhex.core" | Sort-Object -Property LastWriteTime -Descending)[0].Name
-          Copy-Item "${{ github.workspace }}/PKHeX/PKHeX.Core/bin/Any CPU/Release/net9.0/PKHeX.Core.dll" "$env:UserProfile/.nuget/packages/pkhex.core/$nugetver/lib/net9.0"
+          Copy-Item "${{ github.workspace }}/PKHeX/PKHeX.Core/bin/Any CPU/Release/net10.0/PKHeX.Core.dll" "$env:UserProfile/.nuget/packages/pkhex.core/$nugetver/lib/net10.0"
 
       - name: Build PKHeX.Core.AutoMod
         run: |
@@ -59,8 +59,8 @@ jobs:
 
       - name: Prepare dlls
         run: |
-          xcopy "${{ github.workspace }}\PKHeX-Plugins\PKHeX.Core.AutoMod\bin\Any CPU\Release\net9.0\PKHeX.Core.AutoMod.dll" ${{ github.workspace }}\GpssConsole\deps /Y
-          xcopy "${{ github.workspace }}\PKHeX\PKHeX.Core\bin\Any CPU\Release\net9.0\PKHeX.Core.dll" ${{ github.workspace }}\GpssConsole\deps /Y
+          xcopy "${{ github.workspace }}\PKHeX-Plugins\PKHeX.Core.AutoMod\bin\Any CPU\Release\net10.0\PKHeX.Core.AutoMod.dll" ${{ github.workspace }}\GpssConsole\deps /Y
+          xcopy "${{ github.workspace }}\PKHeX\PKHeX.Core\bin\Any CPU\Release\net10.0\PKHeX.Core.dll" ${{ github.workspace }}\GpssConsole\deps /Y
 
       - name: Remove other repo directories
         run: |
@@ -74,7 +74,7 @@ jobs:
         
       - name: Build GpssConsole.csproj
         run: |
-          msbuild ${{ github.workspace }}/GpssConsole.csproj /p:Configuration=Release /p:Platform="Any CPU"
+          msbuild ${{ github.workspace }}/GpssConsole/GpssConsole.csproj /p:Configuration=Release /p:Platform="Any CPU"
         continue-on-error: true
         id: GpssConsole-build
         
@@ -86,4 +86,4 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add GpssConsole/deps/PKHeX.Core.dll GpssConsole/deps/PKHeX.Core.AutoMod.dll
           git commit -m "Update PKHeX.Core.dll and PKHeX.Core.AutoMod.dll"
-          git push origin master
+          git push origin ${{ github.event.repository.default_branch }}
