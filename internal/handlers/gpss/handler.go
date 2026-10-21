@@ -452,6 +452,11 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
 		return
 	}
+	// Every query below must go through the tx: on SQLite the tx holds the write
+	// lock after its first insert, so a read on the base client (including the
+	// one in utils.GenerateDownloadCode, which pulls the client from the context)
+	// blocks until the request times out. See FlagBrew/local-gpss#22.
+	r = r.WithContext(ent.NewContext(r.Context(), tx.Client()))
 
 	bundleLegal := true
 	var mons []*ent.Pokemon
@@ -480,7 +485,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 
 		// Check to see if the mon already exists
 
-		mon, err := db.Pokemon.Query().Where(pokemon.Base64(b64Str)).First(r.Context())
+		mon, err := tx.Pokemon.Query().Where(pokemon.Base64(b64Str)).First(r.Context())
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				tx.Rollback()
@@ -524,7 +529,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check to see if we have a bundle already
-	existingBun, err := db.Bundle.Query().WithPokemons().Where(bundle.And(bundle.HasPokemonsWith(pokemon.IDIn(ids...)), bundle.MinGen(generations[0]), bundle.MaxGen(generations[len(generations)-1]))).First(r.Context())
+	existingBun, err := tx.Bundle.Query().WithPokemons().Where(bundle.And(bundle.HasPokemonsWith(pokemon.IDIn(ids...)), bundle.MinGen(generations[0]), bundle.MaxGen(generations[len(generations)-1]))).First(r.Context())
 	if err != nil && !ent.IsNotFound(err) {
 		tx.Rollback()
 		logger.WithError(err).Error("failed to search for pokemon")
@@ -539,6 +544,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 	// Now let's create the bundle
 	downloadCode, err := utils.GenerateDownloadCode(r.Context(), "bundle")
 	if err != nil {
+		tx.Rollback()
 		logger.WithError(err).Error("failed to generate bundle download code")
 		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
 		return
