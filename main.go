@@ -14,8 +14,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+const version = "2.1.0"
+
 var (
-	cli    = &clix.CLI[models.Flags]{}
+	cli    = &clix.CLI[models.Flags]{VersionInfo: &clix.VersionInfo[models.Flags]{Version: version}}
 	logger log.Interface
 	db     *ent.Client
 	cfg    *models.Config
