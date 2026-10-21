@@ -25,6 +25,7 @@ jobs:
           - os: macos-latest
             arch: osx-x64
             output: osx64
+            goarch: amd64
           - os: windows-latest
             arch: win-x64
             output: win64
@@ -82,6 +83,8 @@ jobs:
 
       - name: Build Local GPSS (Mac OS)
         if: runner.os == 'macOS'
+        env:
+          GOARCH: ${{ matrix.goarch }}
         shell: bash
         run: |
           go build \
