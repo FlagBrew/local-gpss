@@ -461,6 +461,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 
 	bundleLegal := true
 	var mons []*ent.Pokemon
+	seen := make(map[string]struct{}, count)
 	for i := 0; i < count; i++ {
 		pkmn, _, err := r.FormFile(fmt.Sprintf("pkmn%d", i+1))
 		if err != nil {
@@ -483,6 +484,15 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 
 		pkmn.Close()
 		b64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+		// The bundle <-> pokemon edge can only hold each pokemon once, so a bundle
+		// with the same pokemon twice can't be stored as uploaded.
+		if _, ok := seen[b64Str]; ok {
+			tx.Rollback()
+			chix.JSON(w, r, http.StatusBadRequest, chix.M{"error": "bundle contains the same pokemon more than once"})
+			return
+		}
+		seen[b64Str] = struct{}{}
 
 		// Check to see if the mon already exists
 
@@ -524,19 +534,28 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 	// Sort the generations slice
 	slices.Sort(generations)
 
-	ids := make([]int, len(mons))
-	for i, mon := range mons {
-		ids[i] = mon.ID
+	// Check to see if we have a bundle already. A match must contain every uploaded
+	// pokemon (one HasPokemonsWith per pokemon, not IDIn, which matches any of them)
+	// and nothing else, which is checked by size since a superset also matches.
+	preds := []predicate.Bundle{bundle.MinGen(generations[0]), bundle.MaxGen(generations[len(generations)-1])}
+	for _, mon := range mons {
+		preds = append(preds, bundle.HasPokemonsWith(pokemon.ID(mon.ID)))
 	}
-
-	// Check to see if we have a bundle already
-	existingBun, err := tx.Bundle.Query().WithPokemons().Where(bundle.And(bundle.HasPokemonsWith(pokemon.IDIn(ids...)), bundle.MinGen(generations[0]), bundle.MaxGen(generations[len(generations)-1]))).First(r.Context())
-	if err != nil && !ent.IsNotFound(err) {
+	candidates, err := tx.Bundle.Query().WithPokemons().Where(bundle.And(preds...)).All(r.Context())
+	if err != nil {
 		tx.Rollback()
-		logger.WithError(err).Error("failed to search for pokemon")
+		logger.WithError(err).Error("failed to search for bundle")
 		chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
 		return
-	} else if existingBun != nil && len(existingBun.Edges.Pokemons) == count {
+	}
+	var existingBun *ent.Bundle
+	for _, c := range candidates {
+		if len(c.Edges.Pokemons) == len(mons) {
+			existingBun = c
+			break
+		}
+	}
+	if existingBun != nil {
 		if err := tx.Commit(); err != nil {
 			logger.WithError(err).Error("failed to commit transaction")
 			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
