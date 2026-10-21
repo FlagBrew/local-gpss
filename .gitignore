@@ -13,3 +13,6 @@ local-gpss.json
 *.db
 config.json
 .env
+/local-gpss
+/local-gpss.exe
+/dist/
