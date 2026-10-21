@@ -447,6 +447,83 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// GpssConsole runs before the tx is opened: on SQLite the tx holds the write
+	// lock from its first insert until commit, so running it in there would stall
+	// every other write to the database. See FlagBrew/local-gpss#27.
+	type newPkmn struct {
+		slot  int
+		args  models.GpssConsoleArgs
+		legal bool
+	}
+
+	bundleLegal := true
+	mons := make([]*ent.Pokemon, count)
+	var newMons []newPkmn
+	seen := make(map[string]struct{}, count)
+	for i := 0; i < count; i++ {
+		pkmn, _, err := r.FormFile(fmt.Sprintf("pkmn%d", i+1))
+		if err != nil {
+			logger.WithError(err).Error("failed to get pokemon from bundle")
+			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+			return
+		}
+
+		defer pkmn.Close()
+
+		// Base64 encode the pokemon
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, pkmn); err != nil {
+			logger.WithError(err).Error("failed to copy pokemon data")
+			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+			return
+		}
+
+		pkmn.Close()
+		b64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+		// The bundle <-> pokemon edge can only hold each pokemon once, so a bundle
+		// with the same pokemon twice can't be stored as uploaded.
+		if _, ok := seen[b64Str]; ok {
+			chix.JSON(w, r, http.StatusBadRequest, chix.M{"error": "bundle contains the same pokemon more than once"})
+			return
+		}
+		seen[b64Str] = struct{}{}
+
+		// Check to see if the mon already exists
+
+		mon, err := db.Pokemon.Query().Where(pokemon.Base64(b64Str)).First(r.Context())
+		if err != nil {
+			if !ent.IsNotFound(err) {
+				logger.WithError(err).Error("failed to search for pokemon")
+				chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+				return
+			}
+		} else {
+			// mon exists, we can move onto the next.
+			mons[i] = mon
+			continue
+		}
+
+		args := models.GpssConsoleArgs{
+			Mode:       "legality",
+			Generation: generations[i],
+			Pokemon:    b64Str,
+		}
+
+		legal, err := h.checkPkmn(r, logger, args)
+		if err != nil {
+			logger.WithError(err).Error("failed to check pokemon data")
+			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
+			return
+		}
+
+		if !legal {
+			bundleLegal = false
+		}
+
+		newMons = append(newMons, newPkmn{slot: i, args: args, legal: legal})
+	}
+
 	tx, err := db.Tx(r.Context())
 	if err != nil {
 		logger.WithError(err).Error("failed to begin transaction")
@@ -459,64 +536,8 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 	// blocks until the request times out. See FlagBrew/local-gpss#22.
 	r = r.WithContext(ent.NewContext(r.Context(), tx.Client()))
 
-	bundleLegal := true
-	var mons []*ent.Pokemon
-	seen := make(map[string]struct{}, count)
-	for i := 0; i < count; i++ {
-		pkmn, _, err := r.FormFile(fmt.Sprintf("pkmn%d", i+1))
-		if err != nil {
-			tx.Rollback()
-			logger.WithError(err).Error("failed to get pokemon from bundle")
-			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
-			return
-		}
-
-		defer pkmn.Close()
-
-		// Base64 encode the pokemon
-		var buf bytes.Buffer
-		if _, err := io.Copy(&buf, pkmn); err != nil {
-			tx.Rollback()
-			logger.WithError(err).Error("failed to copy pokemon data")
-			chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
-			return
-		}
-
-		pkmn.Close()
-		b64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
-
-		// The bundle <-> pokemon edge can only hold each pokemon once, so a bundle
-		// with the same pokemon twice can't be stored as uploaded.
-		if _, ok := seen[b64Str]; ok {
-			tx.Rollback()
-			chix.JSON(w, r, http.StatusBadRequest, chix.M{"error": "bundle contains the same pokemon more than once"})
-			return
-		}
-		seen[b64Str] = struct{}{}
-
-		// Check to see if the mon already exists
-
-		mon, err := tx.Pokemon.Query().Where(pokemon.Base64(b64Str)).First(r.Context())
-		if err != nil {
-			if !ent.IsNotFound(err) {
-				tx.Rollback()
-				logger.WithError(err).Error("failed to search for pokemon")
-				chix.JSON(w, r, http.StatusInternalServerError, chix.M{"error": "failed to upload bundle"})
-				return
-			}
-		} else {
-			// mon exists, we can move onto the next.
-			mons = append(mons, mon)
-			continue
-		}
-
-		args := models.GpssConsoleArgs{
-			Mode:       "legality",
-			Generation: generations[i],
-			Pokemon:    b64Str,
-		}
-
-		mon, err = h.uploadPkmn(r, tx.Client(), logger, args)
+	for _, nm := range newMons {
+		mon, err := h.insertPkmn(r, tx.Client(), logger, nm.args, nm.legal)
 		if err != nil {
 			tx.Rollback()
 			logger.WithError(err).Error("failed to upload pokemon data")
@@ -524,11 +545,7 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !mon.Legal {
-			bundleLegal = false
-		}
-
-		mons = append(mons, mon)
+		mons[nm.slot] = mon
 	}
 
 	// Sort the generations slice
@@ -593,15 +610,28 @@ func (h *Handler) uploadBundle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) uploadPkmn(r *http.Request, db *ent.Client, logger log.Interface, args models.GpssConsoleArgs) (*ent.Pokemon, error) {
+	legal, err := h.checkPkmn(r, logger, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.insertPkmn(r, db, logger, args, legal)
+}
+
+func (h *Handler) checkPkmn(r *http.Request, logger log.Interface, args models.GpssConsoleArgs) (bool, error) {
 	// We call out to the same function as the legality check endpoint does as we need to do two things
 	// 1. Make sure the file sent over is an actual Pokémon
 	// 2. Check the legality status.
 	result, err := utils.ExecGpssConsole[models.GpssLegalityCheckReply](r.Context(), args)
 	if err != nil {
 		logger.WithError(err).Error("failed to communicate with GpssConsole")
-		return nil, err
+		return false, err
 	}
 
+	return result.Legal, nil
+}
+
+func (h *Handler) insertPkmn(r *http.Request, db *ent.Client, logger log.Interface, args models.GpssConsoleArgs, legal bool) (*ent.Pokemon, error) {
 	downloadCode, err := utils.GenerateDownloadCode(r.Context(), "pokemon")
 	if err != nil {
 		logger.WithError(err).Error("failed to generate download code")
@@ -611,7 +641,7 @@ func (h *Handler) uploadPkmn(r *http.Request, db *ent.Client, logger log.Interfa
 	pkmn, err := db.Pokemon.Create().
 		SetUploadDatetime(time.Now()).
 		SetGeneration(args.Generation).
-		SetLegal(result.Legal).
+		SetLegal(legal).
 		SetDownloadCode(downloadCode).
 		SetBase64(args.Pokemon).Save(r.Context())
 	if err != nil {
