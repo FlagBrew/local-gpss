@@ -23,6 +23,8 @@ the `/data` volume, which is what [`config.example.json`](config.example.json) p
 be readable by the container user, and writable for the database: uid 10001 or group 0. To use Postgres or MySQL instead,
 change the `database` section of the config.
 
+The container only writes to `/data` and `/tmp`, so the compose file runs it with a read-only root filesystem.
+
 ## Updating Auto Legality
 This is a pain to do, and is one of the reasons why Auto Legality never really stayed up to date.
 

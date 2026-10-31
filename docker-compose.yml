@@ -6,6 +6,10 @@ services:
     # OpenShift). Use :latest instead if you need the image to run as root.
     image: ghcr.io/flagbrew/local-gpss:latest-nonroot
     restart: unless-stopped
+    # The app only writes to /data (database) and /tmp (large uploads)
+    read_only: true
+    tmpfs:
+      - /tmp
     ports:
       - "8080:8080"
     volumes:
