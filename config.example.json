@@ -1,0 +1,16 @@
+{
+  "fancy_screen": false,
+  "database": {
+    "db_type": "sqlite",
+    "connection_string": "file:/data/gpss.db?cache=shared&_pragma=foreign_keys(1)"
+  },
+  "http": {
+    "port": 8080,
+    "listening_addr": "0.0.0.0"
+  },
+  "misc": {
+    "recheck_legality": false,
+    "migrate_original_db": false,
+    "download_original_db": false
+  }
+}
