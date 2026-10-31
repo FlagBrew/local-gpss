@@ -5,6 +5,26 @@ A local hostable version of the services that [PKSM](https://github.com/FlagBrew
 ## How to Use
 See the [Setup Guide](https://github.com/FlagBrew/local-gpss/wiki/Server-Setup-Guide)
 
+## Docker
+
+Images for `linux/amd64` and `linux/arm64` (Raspberry Pi 4/5 and other 64-bit Arm boards) are published to
+`ghcr.io/flagbrew/local-gpss`. Use the `-nonroot` tags (`latest-nonroot`, `<version>-nonroot`): they run as an
+unprivileged user and work with random UIDs such as OpenShift's. The plain tags (`latest`, `<version>`) run as root.
+
+The interactive setup isn't available in the container, so it needs a `config.json` mounted in. To run it with Docker Compose:
+
+```sh
+cp config.example.json config.json   # adjust if needed
+docker compose up -d
+```
+
+[`docker-compose.yml`](docker-compose.yml) uses the nonroot image, mounts `config.json` and keeps the sqlite database in
+the `/data` volume, which is what [`config.example.json`](config.example.json) points at. Files and volumes you mount must
+be readable by the container user, and writable for the database: uid 10001 or group 0. To use Postgres or MySQL instead,
+change the `database` section of the config.
+
+The container only writes to `/data` and `/tmp`, so the compose file runs it with a read-only root filesystem.
+
 ## Updating Auto Legality
 This is a pain to do, and is one of the reasons why Auto Legality never really stayed up to date.
 
